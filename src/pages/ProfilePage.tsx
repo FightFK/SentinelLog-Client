@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { User, Lock, Save } from 'lucide-react';
 import { authApi } from '../api/client';
 import { useAuth } from '../contexts/AuthContext';
@@ -15,8 +15,7 @@ export default function ProfilePage() {
   const [nameSuccess, setNameSuccess] = useState('');
   const [passSuccess, setPassSuccess] = useState('');
 
-  const handleNameSave = async (e: FormEvent) => {
-    e.preventDefault();
+  const handleNameSave = async () => {
     setNameLoading(true); setNameError(''); setNameSuccess('');
     try {
       await authApi.updateMe({ name: nameForm.name });
@@ -29,8 +28,7 @@ export default function ProfilePage() {
     }
   };
 
-  const handlePassSave = async (e: FormEvent) => {
-    e.preventDefault();
+  const handlePassSave = async () => {
     if (passForm.newPassword !== passForm.confirm) {
       setPassError('Passwords do not match');
       return;
@@ -76,81 +74,82 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Change Name */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 mb-4">
-        <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
-          <User size={16} className="text-blue-400" /> Change Name
-        </h3>
-        <form onSubmit={handleNameSave} className="space-y-4">
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block">Display Name</label>
-            <input
-              value={nameForm.name}
-              onChange={e => setNameForm({ name: e.target.value })}
-              required
-              className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
-                         text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
-            />
+      {/* Change Name + Change Password */}
+      <div className="flex flex-col gap-4">
+        {/* Change Name */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+          <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
+            <User size={16} className="text-blue-400" /> Change Name
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block">Display Name</label>
+              <input
+                value={nameForm.name}
+                onChange={e => setNameForm({ name: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
+                           text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
+              />
+            </div>
+            {nameError && <ErrorMsg message={nameError} />}
+            {nameSuccess && <p className="text-green-400 text-sm">{nameSuccess}</p>}
+            <div onClick={nameLoading ? undefined : handleNameSave}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500
+                         text-white text-sm font-semibold transition-colors cursor-pointer
+                         ${nameLoading ? 'opacity-60 pointer-events-none' : ''}`}>
+              {nameLoading ? <Spinner size="sm" /> : <Save size={14} />}
+              Save Name
+            </div>
           </div>
-          {nameError && <ErrorMsg message={nameError} />}
-          {nameSuccess && <p className="text-green-400 text-sm">{nameSuccess}</p>}
-          <button type="submit" disabled={nameLoading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500
-                       text-white text-sm font-semibold transition-colors disabled:opacity-60">
-            {nameLoading ? <Spinner size="sm" /> : <Save size={14} />}
-            Save Name
-          </button>
-        </form>
-      </div>
+        </div>
 
-      {/* Change Password */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
-          <Lock size={16} className="text-amber-400" /> Change Password
-        </h3>
-        <form onSubmit={handlePassSave} className="space-y-4">
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block">Current Password</label>
-            <input
-              type="password"
-              value={passForm.oldPassword}
-              onChange={e => setPassForm(f => ({ ...f, oldPassword: e.target.value }))}
-              required
-              className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
-                         text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
-            />
+        {/* Change Password */}
+        <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
+          <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
+            <Lock size={16} className="text-amber-400" /> Change Password
+          </h3>
+          <div className="space-y-4">
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block">Current Password</label>
+              <input
+                type="password"
+                value={passForm.oldPassword}
+                onChange={e => setPassForm(f => ({ ...f, oldPassword: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
+                           text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block">New Password</label>
+              <input
+                type="password"
+                value={passForm.newPassword}
+                onChange={e => setPassForm(f => ({ ...f, newPassword: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
+                           text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
+              />
+            </div>
+            <div>
+              <label className="text-slate-300 text-sm mb-1.5 block">Confirm New Password</label>
+              <input
+                type="password"
+                value={passForm.confirm}
+                onChange={e => setPassForm(f => ({ ...f, confirm: e.target.value }))}
+                className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
+                           text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
+              />
+            </div>
+            {passError && <ErrorMsg message={passError} />}
+            {passSuccess && <p className="text-green-400 text-sm">{passSuccess}</p>}
+            <div onClick={passLoading ? undefined : handlePassSave}
+              className={`flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500
+                         text-white text-sm font-semibold transition-colors cursor-pointer
+                         ${passLoading ? 'opacity-60 pointer-events-none' : ''}`}>
+              {passLoading ? <Spinner size="sm" /> : <Lock size={14} />}
+              Change Password
+            </div>
           </div>
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block">New Password</label>
-            <input
-              type="password"
-              value={passForm.newPassword}
-              onChange={e => setPassForm(f => ({ ...f, newPassword: e.target.value }))}
-              required
-              className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
-                         text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
-            />
-          </div>
-          <div>
-            <label className="text-slate-300 text-sm mb-1.5 block">Confirm New Password</label>
-            <input
-              type="password"
-              value={passForm.confirm}
-              onChange={e => setPassForm(f => ({ ...f, confirm: e.target.value }))}
-              required
-              className="w-full px-4 py-2.5 rounded-lg bg-slate-700 border border-slate-600 text-white
-                         text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-colors"
-            />
-          </div>
-          {passError && <ErrorMsg message={passError} />}
-          {passSuccess && <p className="text-green-400 text-sm">{passSuccess}</p>}
-          <button type="submit" disabled={passLoading}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg bg-amber-600 hover:bg-amber-500
-                       text-white text-sm font-semibold transition-colors disabled:opacity-60">
-            {passLoading ? <Spinner size="sm" /> : <Lock size={14} />}
-            Change Password
-          </button>
-        </form>
+        </div>
       </div>
     </div>
   );

@@ -90,16 +90,16 @@ export default function LogsPage() {
         subtitle={`${(pagination?.total ?? 0).toLocaleString()} total records`}
         action={
           <div className="flex gap-2">
-            <button onClick={() => setShowFilters(s => !s)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors
+            <div onClick={() => setShowFilters(s => !s)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border text-sm transition-colors cursor-pointer
                 ${showFilters ? 'border-blue-500/50 bg-blue-600/20 text-blue-400' : 'border-slate-700 text-slate-400 hover:bg-slate-800'}`}>
               <Filter size={14} />
               Filters
-            </button>
-            <button onClick={() => load(filters)} disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
+            </div>
+            <div onClick={() => !loading && load(filters)}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700 text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
+            </div>
           </div>
         }
       />
@@ -151,14 +151,14 @@ export default function LogsPage() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button onClick={applyFilters}
-              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
+            <div onClick={applyFilters}
+              className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors cursor-pointer">
               Apply Filters
-            </button>
-            <button onClick={clearFilters}
-              className="px-4 py-2 rounded-lg border border-slate-600 text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-700">
+            </div>
+            <div onClick={clearFilters}
+              className="px-4 py-2 rounded-lg border border-slate-600 text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-700 cursor-pointer">
               Clear
-            </button>
+            </div>
           </div>
         </div>
       )}
@@ -200,25 +200,24 @@ export default function LogsPage() {
                     <td className="px-4 py-3"><ThreatBadge isThreat={!!log.isThreat} /></td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        <button onClick={() => navigate(`/logs/${log.id}`)}
-                          className="p-1.5 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors"
+                        <div onClick={() => navigate(`/logs/${log.id}`)}
+                          className="p-1.5 rounded hover:bg-slate-600 text-slate-400 hover:text-white transition-colors cursor-pointer"
                           title="View details">
                           <ChevronRight size={14} />
-                        </button>
+                        </div>
                         {canAnalyze && !log.isThreat && (
-                          <button onClick={() => handleAnalyze(log.id)}
-                            disabled={analyzingIds.has(log.id)}
-                            className="px-2 py-1 rounded text-xs bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-colors disabled:opacity-50"
+                          <div onClick={() => !analyzingIds.has(log.id) && handleAnalyze(log.id)}
+                            className={`px-2 py-1 rounded text-xs bg-blue-600/20 text-blue-400 hover:bg-blue-600/40 transition-colors cursor-pointer ${analyzingIds.has(log.id) ? 'opacity-50 pointer-events-none' : ''}`}
                             title="Run AI analysis">
                             {analyzingIds.has(log.id) ? <Spinner size="sm" /> : 'Analyze'}
-                          </button>
+                          </div>
                         )}
                         {canDelete && (
-                          <button onClick={() => setDeleteDialog({ open: true, id: log.id })}
-                            className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors"
+                          <div onClick={() => setDeleteDialog({ open: true, id: log.id })}
+                            className="p-1.5 rounded hover:bg-red-500/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer"
                             title="Delete">
                             <Trash2 size={14} />
-                          </button>
+                          </div>
                         )}
                       </div>
                     </td>

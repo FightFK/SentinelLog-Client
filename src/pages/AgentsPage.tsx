@@ -54,12 +54,12 @@ function CommandPanel({ agent, onSent }: CommandPanelProps) {
       </div>
       {error && <p className="text-red-400 text-xs mb-2">{error}</p>}
       {success && <p className="text-green-400 text-xs mb-2">{success}</p>}
-      <button onClick={handleSend} disabled={loading}
-        className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
-                   text-white text-sm font-semibold transition-colors disabled:opacity-50">
+      <div onClick={loading ? undefined : handleSend}
+        className={`flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
+                   text-white text-sm font-semibold transition-colors cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
         {loading ? <Spinner size="sm" /> : <Terminal size={14} />}
         Send
-      </button>
+      </div>
     </div>
   );
 }
@@ -112,12 +112,12 @@ function AgentCard({ agent }: AgentCardProps) {
             </p>
           </div>
         </div>
-        <button onClick={handleExpand}
+        <div onClick={handleExpand}
           className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-700
-                     text-slate-400 hover:text-white text-xs transition-colors hover:bg-slate-700">
+                     text-slate-400 hover:text-white text-xs transition-colors hover:bg-slate-700 cursor-pointer">
           {expanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
           {expanded ? 'Collapse' : 'Details'}
-        </button>
+        </div>
       </div>
 
       {expanded && (
@@ -201,22 +201,22 @@ export default function AgentsPage() {
         subtitle={`${agents.length} registered • ${activeCount} active`}
         action={
           <div className="flex gap-2">
-            <button onClick={handleBroadcast}
+            <div onClick={handleBroadcast}
               className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
-                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
+                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800 cursor-pointer">
               <Terminal size={14} /> Broadcast Status
-            </button>
-            <button onClick={handleStaleCheck} disabled={staleChecking}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
-                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
+            </div>
+            <div onClick={staleChecking ? undefined : handleStaleCheck}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
+                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800 cursor-pointer ${staleChecking ? 'opacity-50 pointer-events-none' : ''}`}>
               <RefreshCw size={14} className={staleChecking ? 'animate-spin' : ''} />
               Stale Check
-            </button>
-            <button onClick={load} disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
-                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
+            </div>
+            <div onClick={loading ? undefined : load}
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
+                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800 cursor-pointer ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
               <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
+            </div>
           </div>
         }
       />

@@ -249,24 +249,67 @@ interface ConfirmDialogProps {
   danger?: boolean;
 }
 
-export function ConfirmDialog({ open, title, message, onConfirm, onCancel, confirmLabel = 'Confirm', danger = false }: ConfirmDialogProps) {
+export function ConfirmDialog({
+  open,
+  title,
+  message,
+  onConfirm,
+  onCancel,
+  confirmLabel = 'Confirm',
+  danger = false
+}: ConfirmDialogProps) {
+
   if (!open) return null;
+
+  const base =
+    "px-4 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer select-none";
+
+  const cancelStyle =
+    "border border-slate-600 text-slate-200 hover:bg-slate-800";
+
+  const confirmStyle = danger
+    ? "bg-red-600 hover:bg-red-700 text-white"
+    : "bg-blue-600 hover:bg-blue-700 text-white";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
+
       <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl">
-        <h3 className="text-white font-semibold text-lg mb-2">{title}</h3>
-        <p className="text-slate-300 text-sm mb-6">{message}</p>
+
+        <h3 className="text-white font-semibold text-lg mb-2">
+          {title}
+        </h3>
+
+        <p className="text-slate-300 text-sm mb-6">
+          {message}
+        </p>
+
         <div className="flex gap-3 justify-end">
-          <button onClick={onCancel}
-            className="px-4 py-2 rounded-lg border border-slate-600 text-slate-200 hover:bg-slate-800 transition-colors text-sm">
+
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onCancel}
+            onKeyDown={(e) => e.key === 'Enter' && onCancel()}
+            className={`${base} ${cancelStyle}`}
+          >
             Cancel
-          </button>
-          <button onClick={onConfirm}
-            className={`px-4 py-2 rounded-lg text-white text-sm font-semibold transition-colors ${danger ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'}`}>
+          </div>
+
+          <div
+            role="button"
+            tabIndex={0}
+            onClick={onConfirm}
+            onKeyDown={(e) => e.key === 'Enter' && onConfirm()}
+            className={`${base} ${confirmStyle}`}
+          >
             {confirmLabel}
-          </button>
+          </div>
+
         </div>
+
       </div>
+
     </div>
   );
 }

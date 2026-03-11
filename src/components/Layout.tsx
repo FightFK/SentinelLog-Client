@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   ChevronRight,
   User,
   Settings,
+  UserCircle,
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { RoleBadge } from "./ui";
@@ -59,6 +60,18 @@ function Sidebar({
 }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const settingsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+        setSettingsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const handleLogout = () => {
     logout();
@@ -134,52 +147,49 @@ function Sidebar({
       </nav>
 
       {/* User Section */}
-      <div className="border-t border-slate-800 p-3 space-y-2">
-        <NavLink
-          to="/profile"
-          title={collapsed ? "Profile" : undefined}
-          className={({ isActive }) =>
-            `flex items-center gap-3 p-2 rounded-lg transition
-             ${
-               isActive
-                 ? "bg-slate-800 text-white"
-                 : "text-slate-300 hover:bg-slate-800 hover:text-white"
-             }`
-          }
-        >
+      <div className="border-t border-slate-800 p-3">
+        <div className="flex items-center gap-3 p-2 rounded-lg">
           <div className="w-8 h-8 rounded-full bg-blue-600/30 flex items-center justify-center shrink-0">
             <User size={15} className="text-blue-400" />
           </div>
 
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-medium truncate">
-                {user?.name}
-              </p>
-              <div className="mt-0.5">
-                <RoleBadge role={user!.role} />
-              </div>
+              <p className="text-sm text-white font-medium truncate">{user?.name}</p>
+              <div className="mt-0.5"><RoleBadge role={user!.role} /></div>
             </div>
           )}
 
-          {!collapsed && (
-            <Settings
-              size={15}
-              className="opacity-40 hover:opacity-100 transition"
-            />
-          )}
-        </NavLink>
+          {/* Settings gear with dropdown */}
+          <div ref={settingsRef} className="relative shrink-0">
+            <div
+              onClick={() => setSettingsOpen(o => !o)}
+              title="Settings"
+              className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition"
+            >
+              <Settings size={15} className={settingsOpen ? 'text-white' : ''} />
+            </div>
 
-        {/* Logout */}
-        <div
-          onClick={handleLogout}
-          title={collapsed ? "Logout" : undefined}
-          className="flex items-center gap-3 px-3 py-2 rounded-lg
-          text-slate-400 hover:text-red-400 hover:bg-red-500/10
-          transition cursor-pointer"
-        >
-          <LogOut size={16} className="shrink-0" />
-          {!collapsed && <span className="text-sm">Logout</span>}
+            {settingsOpen && (
+              <div className="absolute bottom-9 left-0 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 z-50">
+                <div
+                  onClick={() => { setSettingsOpen(false); navigate('/profile'); }}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition rounded-lg mx-1"
+                >
+                  <UserCircle size={15} />
+                  My Profile
+                </div>
+                <div className="my-1 border-t border-slate-700" />
+                <div
+                  onClick={handleLogout}
+                  className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-300 hover:text-red-400 hover:bg-red-500/10 cursor-pointer transition rounded-lg mx-1"
+                >
+                  <LogOut size={15} />
+                  Logout
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </aside>
@@ -199,8 +209,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
         }`}
       >
         {/* Topbar */}
-        <header className="sticky top-0 z-20 flex items-center gap-4 px-6 py-3
-        bg-slate-900/90 backdrop-blur border-b border-slate-800">
+        <header
+          className="sticky top-0 z-20 flex items-center gap-4 px-6 py-3
+        bg-slate-900/90 backdrop-blur border-b border-slate-800"
+        >
           {collapsed && (
             <div
               onClick={() => setCollapsed(false)}

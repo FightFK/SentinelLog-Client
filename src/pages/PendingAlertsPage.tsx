@@ -91,9 +91,9 @@ function ConfidenceMeter({ value }: { value?: number }) {
 
 const DECISIONS: { value: Decision; label: string; color: string }[] = [
   { value: 'block', label: 'Block IP', color: 'bg-red-600 hover:bg-red-700' },
-  { value: 'whitelist', label: 'Allow', color: 'bg-green-600 hover:bg-green-700' },
+  { value: 'ignore', label: 'Ignore', color: 'bg-green-600 hover:bg-green-700' },
   { value: 'monitor', label: 'Monitor', color: 'bg-amber-600 hover:bg-amber-700' },
-  { value: 'dismiss', label: 'Dismiss', color: 'bg-slate-600 hover:bg-slate-700' },
+  { value: 'alert', label: 'Alert', color: 'bg-slate-600 hover:bg-slate-700' },
 ];
 
 
@@ -106,11 +106,12 @@ function DecideModal({
 }: {
   alert: PendingAlert
   onClose: () => void
-  onDecide: (decision: Decision, note: string) => Promise<void>
+  onDecide: (action: Decision, reason: string, duration?: number) => Promise<void>
 }) {
 
-  const [decision, setDecision] = useState<Decision>('monitor');
-  const [note, setNote] = useState('');
+  const [decision, setDecision] = useState<Decision>('block');
+  const [reason, setReason] = useState('');
+  const [duration, setDuration] = useState<number>(3600);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -130,7 +131,7 @@ function DecideModal({
 
     try {
 
-      await onDecide(decision, note);
+      await onDecide(decision, reason, duration);
       onClose();
 
     } catch (err: unknown) {
@@ -195,12 +196,23 @@ function DecideModal({
 
 
         <textarea
-          value={note}
-          onChange={e => setNote(e.target.value)}
+          value={reason}
+          onChange={e => setReason(e.target.value)}
           rows={3}
-          placeholder="Add notes (optional)"
-          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white mb-4"
+          placeholder="Reason (optional)"
+          className="w-full bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white mb-3"
         />
+
+        <div className="flex items-center gap-3 mb-4">
+          <label className="text-xs text-slate-400 whitespace-nowrap">Duration (seconds)</label>
+          <input
+            type="number"
+            value={duration}
+            onChange={e => setDuration(Number(e.target.value))}
+            min={0}
+            className="flex-1 bg-slate-800 border border-slate-700 rounded-lg p-2 text-sm text-white"
+          />
+        </div>
 
 
         {error && <ErrorMsg message={error} />}
@@ -208,19 +220,19 @@ function DecideModal({
 
         <div className="flex gap-3 mt-3">
 
-          <button
+          <div
             onClick={onClose}
-            className="flex-1 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800"
+            className="flex-1 py-2 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 cursor-pointer text-center"
           >
             Cancel
-          </button>
+          </div>
 
-          <button
+          <div
             onClick={submit}
-            className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white"
+            className="flex-1 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white cursor-pointer text-center"
           >
             {loading ? 'Submitting...' : 'Submit'}
-          </button>
+          </div>
 
         </div>
 
@@ -233,7 +245,7 @@ function DecideModal({
 }
 
 
-/* ---------------- Alert Card ---------------- */
+/* ---------------- Alert Card Component ---------------- */
 
 function AlertCard({
   alert,
@@ -323,29 +335,29 @@ function AlertCard({
 
           <div className="flex gap-2">
 
-            <button
+            <div
               onClick={onDecide}
-              className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-xs flex items-center gap-1"
+              className="px-3 py-1.5 bg-blue-600/20 text-blue-400 rounded-lg text-xs flex items-center gap-1 cursor-pointer"
             >
               <Eye size={13} />
               Take Action
-            </button>
+            </div>
 
-            <button
+            <div
               onClick={onDismiss}
-              className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400"
+              className="p-1.5 hover:bg-red-500/20 rounded-lg text-slate-400 hover:text-red-400 cursor-pointer"
             >
               <Trash2 size={15} />
-            </button>
+            </div>
 
-            <button
+            <div
               onClick={() => setExpanded(!expanded)}
-              className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400"
+              className="p-1.5 hover:bg-slate-700 rounded-lg text-slate-400 cursor-pointer"
             >
               {expanded
                 ? <ChevronUp size={15} />
                 : <ChevronDown size={15} />}
-            </button>
+            </div>
 
           </div>
 
@@ -497,7 +509,6 @@ export default function PendingAlertsPage() {
     id: null as number | null,
   });
 
-
   const load = async () => {
 
     setLoading(true);
@@ -524,29 +535,29 @@ export default function PendingAlertsPage() {
 
   };
 
-
   useEffect(() => {
     load();
   }, []);
 
-
   const handleDecide = async (
-    decision: Decision,
-    note: string
+    action: Decision,
+    reason: string,
+    duration?: number
   ) => {
 
     if (!selected) return;
 
     await adminApi.decide(
       selected.id,
-      decision,
-      note
+      action,
+      reason,
+      duration
     );
 
+    setSelected(null);
     await load();
 
   };
-
 
   const handleDismiss = async () => {
 
@@ -565,90 +576,103 @@ export default function PendingAlertsPage() {
 
   };
 
-
   return (
+    <>
+      <div>
 
-    <div>
+        <SectionHeader
+          title="Pending Alerts"
+          subtitle={
+            alerts.length
+              ? `${alerts.length} alerts pending`
+              : 'No pending alerts'
+          }
+          action={
 
-      <SectionHeader
-        title="Pending Alerts"
-        subtitle={
-          alerts.length
-            ? `${alerts.length} alerts pending`
-            : 'No pending alerts'
-        }
-        action={
+            <div
+              onClick={load}
+              className="flex items-center gap-2 px-3 py-2 border border-slate-700 rounded-lg text-sm text-slate-400 hover:bg-slate-800 cursor-pointer"
+            >
 
-          <button
-            onClick={load}
-            className="flex items-center gap-2 px-3 py-2 border border-slate-700 rounded-lg text-sm text-slate-400 hover:bg-slate-800"
-          >
-
-            <RefreshCw
-              size={14}
-              className={loading ? 'animate-spin' : ''}
-            />
-
-          </button>
-
-        }
-      />
-
-
-      {error &&
-        <ErrorMsg message={error} />
-      }
-
-
-      {loading
-        ? <LoadingOverlay />
-        : alerts.length === 0
-          ? (
-
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-12 text-center">
-
-              <CheckCircle
-                size={40}
-                className="text-green-400 mx-auto mb-3"
+              <RefreshCw
+                size={14}
+                className={loading ? 'animate-spin' : ''}
               />
 
-              <p className="text-white font-semibold">
-                No alerts detected
-              </p>
-
-              <p className="text-slate-400 text-sm">
-                All systems operating normally
-              </p>
-
             </div>
 
-          )
-          : (
+          }
+        />
 
-            <div className="space-y-3">
+        {error &&
+          <ErrorMsg message={error} />
+        }
 
-              {alerts.map(alert => (
+        {loading
+          ? <LoadingOverlay />
+          : alerts.length === 0
+            ? (
 
-                <AlertCard
-                  key={alert.id}
-                  alert={alert}
-                  onDecide={() => setSelected(alert)}
-                  onDismiss={() =>
-                    setDismissDialog({
-                      open: true,
-                      id: alert.id
-                    })
-                  }
+              <div className="bg-slate-800 border border-slate-700 rounded-xl p-12 text-center">
+
+                <CheckCircle
+                  size={40}
+                  className="text-green-400 mx-auto mb-3"
                 />
 
-              ))}
+                <p className="text-white font-semibold">
+                  No alerts detected
+                </p>
 
-            </div>
+                <p className="text-slate-400 text-sm">
+                  All systems operating normally
+                </p>
 
-          )}
+              </div>
 
-    </div>
+            )
+            : (
 
+              <div className="space-y-3">
+
+                {alerts.map(alert => (
+
+                  <AlertCard
+                    key={alert.id}
+                    alert={alert}
+                    onDecide={() => setSelected(alert)}
+                    onDismiss={() =>
+                      setDismissDialog({
+                        open: true,
+                        id: alert.id
+                      })
+                    }
+                  />
+
+                ))}
+
+              </div>
+
+            )}
+
+      </div>
+
+      {selected && (
+        <DecideModal
+          alert={selected}
+          onClose={() => setSelected(null)}
+          onDecide={handleDecide}
+        />
+      )}
+
+      <ConfirmDialog
+        open={dismissDialog.open}
+        title="Warning "
+        message="Are you sure you want to dismiss this alert?"
+        onConfirm={handleDismiss}
+        onCancel={() => setDismissDialog({ open: false, id: null })}
+      />
+    </>
   );
 
 }

@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, Eye, EyeOff, LogIn } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,8 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     setError('');
     setLoading(true);
     try {
@@ -25,6 +24,11 @@ export default function LoginPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit();
   };
 
   return (
@@ -79,22 +83,22 @@ export default function LoginPage() {
                              text-white placeholder-slate-500 focus:outline-none focus:ring-2
                              focus:ring-blue-500/50 focus:border-blue-500/50 text-sm transition-colors"
                 />
-                <button type="button" onClick={() => setShowPass(s => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200">
+                <div onClick={() => setShowPass(s => !s)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer">
                   {showPass ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                </div>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold
-                         flex items-center justify-center gap-2 transition-colors disabled:opacity-60 text-sm"
+            <div
+              onClick={loading ? undefined : submit}
+              className={`w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold
+                         flex items-center justify-center gap-2 transition-colors text-sm
+                         ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               {loading ? <Spinner size="sm" /> : <LogIn size={16} />}
               {loading ? 'Signing in…' : 'Sign in'}
-            </button>
+            </div>
           </form>
 
           <p className="text-center text-slate-500 text-sm mt-6">

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { UserPlus, RefreshCw, Edit3, Check, X } from 'lucide-react';
+import { UserPlus, Edit3, Trash2 } from 'lucide-react';
 import { authApi } from '../api/client';
 import type { User, Role } from '../types';
 import { RoleBadge, LoadingOverlay, ErrorMsg, SectionHeader } from '../components/ui';
@@ -7,13 +7,13 @@ import { useAuth } from '../contexts/AuthContext';
 
 const ROLES: Role[] = ['viewer', 'analyst', 'admin'];
 
-interface EditRowProps {
+interface EditModalProps {
   user: User;
   onSave: (id: number, role: Role, isActive: boolean) => Promise<void>;
-  onCancel: () => void;
+  onClose: () => void;
 }
 
-function EditRow({ user, onSave, onCancel }: EditRowProps) {
+function EditModal({ user, onSave, onClose }: EditModalProps) {
   const [role, setRole] = useState<Role>(user.role);
   const [isActive, setIsActive] = useState(user.isActive ?? true);
   const [loading, setLoading] = useState(false);
@@ -30,33 +30,40 @@ function EditRow({ user, onSave, onCancel }: EditRowProps) {
   };
 
   return (
-    <>
-      <td className="px-4 py-2">
-        <select value={role} onChange={e => setRole(e.target.value as Role)}
-          className="px-2 py-1 rounded bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none">
-          {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-        </select>
-      </td>
-      <td className="px-4 py-2">
-        <select value={isActive ? 'true' : 'false'} onChange={e => setIsActive(e.target.value === 'true')}
-          className="px-2 py-1 rounded bg-slate-700 border border-slate-600 text-white text-sm focus:outline-none">
-          <option value="true">Active</option>
-          <option value="false">Inactive</option>
-        </select>
-      </td>
-      <td className="px-4 py-2">
-        {error && <span className="text-red-400 text-xs">{error}</span>}
-        <div className="flex gap-2">
-          <button onClick={handleSave} disabled={loading}
-            className="p-1.5 rounded bg-green-600/20 text-green-400 hover:bg-green-600/40 transition-colors">
-            <Check size={14} />
-          </button>
-          <button onClick={onCancel} className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-            <X size={14} />
-          </button>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+        <h3 className="text-white font-semibold text-lg mb-1">Edit User</h3>
+        <p className="text-slate-400 text-sm mb-5">{user.name} &middot; <span className="font-mono text-xs">{user.email}</span></p>
+        <div className="space-y-4">
+          <div>
+            <label className="text-slate-400 text-sm mb-1 block">Role</label>
+            <select value={role} onChange={e => setRole(e.target.value as Role)}
+              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none">
+              {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-slate-400 text-sm mb-1 block">Status</label>
+            <select value={isActive ? 'true' : 'false'} onChange={e => setIsActive(e.target.value === 'true')}
+              className="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none">
+              <option value="true">Active</option>
+              <option value="false">Inactive</option>
+            </select>
+          </div>
         </div>
-      </td>
-    </>
+        {error && <div className="mt-3"><ErrorMsg message={error} /></div>}
+        <div className="flex gap-3 mt-5">
+          <div onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm text-center cursor-pointer">
+            Cancel
+          </div>
+          <div onClick={loading ? undefined : handleSave}
+            className={`flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors text-center cursor-pointer ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
+            {loading ? 'Saving…' : 'Save Changes'}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -109,13 +116,13 @@ function RegisterModal({ onClose, onCreated }: RegisterModalProps) {
         </div>
         {error && <div className="mt-3"><ErrorMsg message={error} /></div>}
         <div className="flex gap-3 mt-5">
-          <button onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm">
+          <div onClick={onClose} className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm text-center cursor-pointer">
             Cancel
-          </button>
-          <button onClick={handleSubmit} disabled={loading}
-            className="flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors disabled:opacity-60">
+          </div>
+          <div onClick={loading ? undefined : handleSubmit}
+            className={`flex-1 py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors text-center cursor-pointer ${loading ? 'opacity-60 pointer-events-none' : ''}`}>
             {loading ? 'Creating…' : 'Create User'}
-          </button>
+          </div>
         </div>
       </div>
     </div>
@@ -127,7 +134,10 @@ export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTarget, setEditTarget] = useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const load = async () => {
@@ -146,8 +156,22 @@ export default function UsersPage() {
 
   const handleSave = async (id: number, role: Role, isActive: boolean) => {
     await authApi.patchUser(id, { role, isActive });
-    setEditingId(null);
+    setEditTarget(null);
     await load();
+  };
+
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true); setDeleteError('');
+    try {
+      await authApi.deleteUser(deleteTarget.id);
+      setDeleteTarget(null);
+      await load();
+    } catch (err: unknown) {
+      setDeleteError(err instanceof Error ? err.message : 'Delete failed');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -156,17 +180,10 @@ export default function UsersPage() {
         title="User Management"
         subtitle={`${users.length} users in system`}
         action={
-          <div className="flex gap-2">
-            <button onClick={() => setShowModal(true)}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
-                         text-white text-sm font-semibold transition-colors">
-              <UserPlus size={14} /> Add User
-            </button>
-            <button onClick={load} disabled={loading}
-              className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
-                         text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            </button>
+          <div onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500
+                       text-white text-sm font-semibold transition-colors cursor-pointer">
+            <UserPlus size={14} /> Add User
           </div>
         }
       />
@@ -191,11 +208,7 @@ export default function UsersPage() {
                     {u.id === me?.id && <span className="ml-2 text-xs text-blue-400">(you)</span>}
                   </td>
                   <td className="px-4 py-3 text-slate-300 text-xs font-mono">{u.email}</td>
-                  {editingId === u.id && u.id !== me?.id ? (
-                    <EditRow user={u} onSave={handleSave} onCancel={() => setEditingId(null)} />
-                  ) : (
-                    <>
-                      <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
+                  <td className="px-4 py-3"><RoleBadge role={u.role} /></td>
                       <td className="px-4 py-3">
                         <span className={`text-xs ${u.isActive !== false ? 'text-green-400' : 'text-red-400'}`}>
                           {u.isActive !== false ? 'Active' : 'Inactive'}
@@ -206,14 +219,18 @@ export default function UsersPage() {
                       </td>
                       <td className="px-4 py-3">
                         {u.id !== me?.id && (
-                          <button onClick={() => setEditingId(u.id)}
-                            className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors">
-                            <Edit3 size={14} />
-                          </button>
+                          <div className="flex gap-1">
+                            <div onClick={() => setEditTarget(u)}
+                              className="p-1.5 rounded hover:bg-slate-700 text-slate-400 hover:text-white transition-colors cursor-pointer">
+                              <Edit3 size={14} />
+                            </div>
+                            <div onClick={() => { setDeleteError(''); setDeleteTarget(u); }}
+                              className="p-1.5 rounded hover:bg-red-600/20 text-slate-400 hover:text-red-400 transition-colors cursor-pointer">
+                              <Trash2 size={14} />
+                            </div>
+                          </div>
                         )}
                       </td>
-                    </>
-                  )}
                 </tr>
               ))}
             </tbody>
@@ -222,6 +239,30 @@ export default function UsersPage() {
       </div>
 
       {showModal && <RegisterModal onClose={() => setShowModal(false)} onCreated={load} />}
+      {editTarget && <EditModal user={editTarget} onSave={handleSave} onClose={() => setEditTarget(null)} />}
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 w-full max-w-sm shadow-2xl">
+            <h3 className="text-white font-semibold text-lg mb-2">Delete User</h3>
+            <p className="text-slate-400 text-sm mb-1">
+              Are you sure you want to delete <span className="text-white font-medium">{deleteTarget.name}</span>?
+            </p>
+            <p className="text-slate-500 text-xs mb-4">{deleteTarget.email}</p>
+            {deleteError && <div className="mb-3"><ErrorMsg message={deleteError} /></div>}
+            <div className="flex gap-3">
+              <div onClick={() => setDeleteTarget(null)}
+                className="flex-1 py-2.5 rounded-lg border border-slate-700 text-slate-300 hover:bg-slate-800 transition-colors text-sm text-center cursor-pointer">
+                Cancel
+              </div>
+              <div onClick={deleteLoading ? undefined : handleDelete}
+                className={`flex-1 py-2.5 rounded-lg bg-red-600 hover:bg-red-500 text-white text-sm font-semibold transition-colors text-center cursor-pointer ${deleteLoading ? 'opacity-60 pointer-events-none' : ''}`}>
+                {deleteLoading ? 'Deleting…' : 'Delete'}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

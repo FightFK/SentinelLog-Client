@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Shield, UserPlus } from 'lucide-react';
 import { authApi } from '../api/client';
@@ -11,8 +11,7 @@ export default function RegisterPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
+  const submit = async () => {
     setError(''); setSuccess('');
     setLoading(true);
     try {
@@ -24,6 +23,11 @@ export default function RegisterPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submit();
   };
 
   return (
@@ -68,15 +72,15 @@ export default function RegisterPage() {
                 />
               </div>
             ))}
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold
-                         flex items-center justify-center gap-2 transition-colors disabled:opacity-60 text-sm"
+            <div
+              onClick={loading ? undefined : submit}
+              className={`w-full py-2.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-white font-semibold
+                         flex items-center justify-center gap-2 transition-colors text-sm
+                         ${loading ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
             >
               {loading ? <Spinner size="sm" /> : <UserPlus size={16} />}
               {loading ? 'Creating…' : 'Create account'}
-            </button>
+            </div>
           </form>
 
           <p className="text-center text-slate-500 text-sm mt-6">

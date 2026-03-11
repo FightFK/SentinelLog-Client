@@ -1,7 +1,7 @@
 import type {
   ApiResponse, AuthData, User, Log, LogsResponse, LogStats,
-  AnalysisResult, ThreatSummary, PendingAlert, AdminDecision,
-  Agent, AgentCommand, LogFilters, Decision,
+  AnalysisResult, ThreatSummary, ThreatOverview, PendingAlert, AdminDecision,
+  Agent, AgentCommand, LogFilters, Decision, DashboardData,
 } from '../types';
 
 const BASE_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:3000';
@@ -52,7 +52,13 @@ export const authApi = {
   listUsers: () => request<User[]>('GET', '/api/auth/users'),
 
   patchUser: (id: number, data: { role?: string; isActive?: boolean }) =>
-    request<User>('PATCH', `/api/auth/users/${id}`, data),
+    request<User>('PATCH', `/api/auth/users/${id}`, {
+      ...(data.role !== undefined ? { role: data.role } : {}),
+      ...(data.isActive !== undefined ? { active: data.isActive } : {}),
+    }),
+
+  deleteUser: (id: number) =>
+    request<null>('DELETE', `/api/auth/users/${id}`),
 };
 
 // ─── Logs ─────────────────────────────────────────────────────────────────────
@@ -70,6 +76,8 @@ export const logsApi = {
     request<LogsResponse>('GET', `/api/logs${buildQuery((filters ?? {}) as Record<string, unknown>)}`),
 
   stats: () => request<LogStats>('GET', '/api/logs/stats'),
+
+  dashboard: () => request<DashboardData>('GET', '/api/logs/dashboard'),
 
   get: (id: number) => request<Log>('GET', `/api/logs/${id}`),
 
@@ -95,6 +103,9 @@ export const analysisApi = {
   threats: (params?: { startDate?: string; endDate?: string; severity?: string }) =>
     request<ThreatSummary>('GET', `/api/analysis/threats${buildQuery(params ?? {})}`),
 
+  overview: (params?: { start_date?: string; end_date?: string; severity?: string }) =>
+    request<ThreatOverview>('GET', `/api/analysis/overview${buildQuery(params ?? {})}`),
+
   embedding: (logId: number) =>
     request<{ message: string }>('POST', '/api/analysis/embedding', { logId }),
 };
@@ -103,17 +114,17 @@ export const analysisApi = {
 export const adminApi = {
   pending: () => request<PendingAlert[]>('GET', '/api/admin/pending'),
 
-  decide: (alertId: number, decision: Decision, note?: string) =>
+  decide: (alertId: number, action: Decision, reason?: string, duration?: number) =>
     request<{ decisionId: string; decision: string }>(
-      'POST', `/api/admin/decide/${alertId}`, { decision, note }
+      'POST', `/api/admin/decide/${alertId}`, { action, reason, duration }
     ),
 
   dismissPending: (alertId: number) =>
     request<null>('DELETE', `/api/admin/pending/${alertId}`),
 
-  decisions: (page = 1, limit = 50) =>
-    request<{ decisions: AdminDecision[]; pagination: { page: number; total: number } }>(
-      'GET', `/api/admin/decisions?page=${page}&limit=${limit}`
+  decisions: () =>
+    request<AdminDecision[]>(
+      'GET', `/api/admin/decisions`
     ),
 
   learnedRules: () =>

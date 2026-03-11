@@ -5,7 +5,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar,
 } from 'recharts';
 import { analysisApi } from '../api/client';
-import type { ThreatSummary } from '../types';
+import type { ThreatOverview } from '../types';
 import { SeverityBadge, StatCard, LoadingOverlay, ErrorMsg, SectionHeader } from '../components/ui';
 
 const SEV_COLORS: Record<string, string> = { HIGH: '#ef4444', MEDIUM: '#f59e0b', LOW: '#3b82f6' };
@@ -21,7 +21,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
 }
 
 export default function ThreatsPage() {
-  const [data, setData] = useState<ThreatSummary | null>(null);
+  const [data, setData] = useState<ThreatOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [dateRange, setDateRange] = useState({ start: '', end: '' });
@@ -31,10 +31,10 @@ export default function ThreatsPage() {
     setLoading(true); setError('');
     try {
       const params: Record<string, string> = {};
-      if (dateRange.start) params.startDate = dateRange.start;
-      if (dateRange.end) params.endDate = dateRange.end;
+      if (dateRange.start) params.start_date = dateRange.start;
+      if (dateRange.end) params.end_date = dateRange.end;
       if (severity) params.severity = severity;
-      const res = await analysisApi.threats(params);
+      const res = await analysisApi.overview(params);
       setData(res.data);
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to load threat data');
@@ -45,16 +45,18 @@ export default function ThreatsPage() {
 
   useEffect(() => { load(); }, []);
 
-  const threatTypeData = data?.topThreatTypes?.slice(0, 10).map(t => ({
-    name: t.type.length > 20 ? t.type.slice(0, 20) + '…' : t.type,
-    fullName: t.type,
+  const threatTypeData = (data?.top_threat_types ?? []).slice(0, 10).map(t => ({
+    name: t.attack_type.length > 20 ? t.attack_type.slice(0, 20) + '…' : t.attack_type,
+    fullName: t.attack_type,
     value: t.count,
-  })) ?? [];
+  }));
 
   const radarData = threatTypeData.slice(0, 6).map(t => ({
     subject: t.name,
     value: t.value,
   }));
+
+  const summary = data?.summary;
 
   return (
     <div>
@@ -62,12 +64,13 @@ export default function ThreatsPage() {
         title="Threat Analysis"
         subtitle="AI-powered security threat overview"
         action={
-          <button onClick={load} disabled={loading}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
-                       text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800">
+          <div onClick={load}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-700
+                       text-slate-400 hover:text-white text-sm transition-colors hover:bg-slate-800 cursor-pointer
+                       ${loading ? 'opacity-50 pointer-events-none' : ''}`}>
             <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
             Refresh
-          </button>
+          </div>
         }
       />
 
@@ -94,10 +97,10 @@ export default function ThreatsPage() {
           </select>
         </div>
         <div className="flex items-end">
-          <button onClick={load}
-            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors">
+          <div onClick={load}
+            className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold transition-colors cursor-pointer">
             Apply
-          </button>
+          </div>
         </div>
       </div>
 
@@ -106,22 +109,21 @@ export default function ThreatsPage() {
         <>
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <StatCard label="Total Threats" value={(data.totalThreats ?? 0).toLocaleString()}
+            <StatCard label="Total Threats" value={(summary?.total ?? 0).toLocaleString()}
               icon={<Shield size={20} />} color="text-red-400" />
             <StatCard label="HIGH Severity"
-              value={<><span className="text-2xl font-bold text-red-400">{data.bySeverity?.HIGH ?? 0}</span></>}
+              value={<span className="text-2xl font-bold text-red-400">{summary?.high ?? 0}</span>}
               icon={<TrendingUp size={20} />} color="text-red-400" />
             <StatCard label="MEDIUM Severity"
-              value={<span className="text-2xl font-bold text-amber-400">{data.bySeverity?.MEDIUM ?? 0}</span>}
+              value={<span className="text-2xl font-bold text-amber-400">{summary?.medium ?? 0}</span>}
               icon={<TrendingUp size={20} />} color="text-amber-400" />
             <StatCard label="LOW Severity"
-              value={<span className="text-2xl font-bold text-blue-400">{data.bySeverity?.LOW ?? 0}</span>}
+              value={<span className="text-2xl font-bold text-blue-400">{summary?.low ?? 0}</span>}
               icon={<TrendingUp size={20} />} color="text-blue-400" />
           </div>
 
           {/* Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            {/* Top threat types bar */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h3 className="text-white font-semibold text-sm mb-4">Top Threat Types</h3>
               {threatTypeData.length > 0 ? (
@@ -136,7 +138,6 @@ export default function ThreatsPage() {
               ) : <p className="text-slate-500 text-sm py-8 text-center">No threat type data</p>}
             </div>
 
-            {/* Radar chart */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h3 className="text-white font-semibold text-sm mb-4">Threat Pattern Radar</h3>
               {radarData.length > 0 ? (
@@ -154,45 +155,46 @@ export default function ThreatsPage() {
 
           {/* Severity breakdown */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            {/* Severity bar */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h3 className="text-white font-semibold text-sm mb-4">Severity Distribution</h3>
               <div className="space-y-3">
-                {(['HIGH', 'MEDIUM', 'LOW'] as const).map(sev => {
-                  const count = data.bySeverity?.[sev] ?? 0;
-                  const total = data.totalThreats || 1;
-                  return (
-                    <div key={sev} className="flex items-center gap-3">
-                      <div className="w-16"><SeverityBadge severity={sev} /></div>
-                      <div className="flex-1 bg-slate-700 rounded-full h-2">
+                {(() => {
+                  const dist = data.severity_distribution ?? [];
+                  const distTotal = Math.max(dist.reduce((s, x) => s + x.count, 0), 1);
+                  return dist.map(item => (
+                    <div key={item.severity} className="flex items-center gap-3">
+                      <div className="w-16 shrink-0"><SeverityBadge severity={item.severity as 'HIGH' | 'MEDIUM' | 'LOW'} /></div>
+                      <div className="flex-1 min-w-0 bg-slate-700 rounded-full h-2 overflow-hidden">
                         <div className="h-2 rounded-full transition-all"
-                          style={{ width: `${(count / total) * 100}%`, backgroundColor: SEV_COLORS[sev] }} />
+                          style={{ width: `${Math.min((item.count / distTotal) * 100, 100)}%`, backgroundColor: SEV_COLORS[item.severity] ?? '#94a3b8' }} />
                       </div>
-                      <span className="text-slate-300 text-sm w-10 text-right">{count}</span>
-                      <span className="text-slate-400 text-xs w-10">{((count / total) * 100).toFixed(0)}%</span>
+                      <span className="text-slate-300 text-sm w-10 shrink-0 text-right">{item.count}</span>
+                      <span className="text-slate-400 text-xs w-10 shrink-0">{((item.count / distTotal) * 100).toFixed(0)}%</span>
                     </div>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             </div>
 
-            {/* Top attacker IPs */}
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-5">
               <h3 className="text-white font-semibold text-sm mb-4 flex items-center gap-2">
                 <Target size={16} className="text-red-400" /> Top Attacker IPs
               </h3>
-              {(data.topAttackerIPs?.length ?? 0) > 0 ? (
+              {(data.top_attacker_ips?.length ?? 0) > 0 ? (
                 <div className="space-y-2">
-                  {(data.topAttackerIPs ?? []).slice(0, 8).map((item, i) => {
-                    const max = data.topAttackerIPs![0].count;
+                  {data.top_attacker_ips.slice(0, 8).map((item, i) => {
+                    const max = Math.max(data.top_attacker_ips[0]?.threat_count ?? 1, 1);
                     return (
                       <div key={i} className="flex items-center gap-3">
-                        <span className="font-mono text-xs text-slate-200 w-32 truncate">{item.ip}</span>
-                        <div className="flex-1 bg-slate-700 rounded-full h-1.5">
+                        <span className="font-mono text-xs text-slate-200 w-28 shrink-0 truncate">{item.ip}</span>
+                        <div className="flex-1 min-w-0 bg-slate-700 rounded-full h-1.5 overflow-hidden">
                           <div className="bg-red-500 h-1.5 rounded-full"
-                            style={{ width: `${(item.count / max) * 100}%` }} />
+                            style={{ width: `${Math.min((item.threat_count / max) * 100, 100)}%` }} />
                         </div>
-                        <span className="text-xs text-slate-300 w-8 text-right">{item.count}</span>
+                        <span className="text-xs font-bold w-16 shrink-0 text-right"
+                          style={{ color: SEV_COLORS[item.top_threat_level] ?? '#94a3b8' }}>
+                          {item.threat_count} {item.top_threat_level}
+                        </span>
                       </div>
                     );
                   })}

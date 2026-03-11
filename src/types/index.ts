@@ -60,6 +60,20 @@ export interface LogStats {
 // ─── Analysis ─────────────────────────────────────────────────────────────────
 export type Severity = 'HIGH' | 'MEDIUM' | 'LOW';
 
+export interface DashboardData {
+  summary: {
+    total_logs: number;
+    threats_detected: { count: number; percent: number };
+    threat_analyses: number;
+    pending_alerts: number;
+  };
+  requests_by_method: { method: string; count: number }[];
+  threats_by_severity: { threat_level: string; count: number }[];
+  response_status_codes: { status_code: string; count: number }[];
+  top_source_ips: { ip: string; count: number }[];
+  top_attacker_ips: { ip: string; threat_count: number; top_threat_level: string }[];
+}
+
 export interface AnalysisResult {
   logId: number;
   isThreat: boolean;
@@ -78,8 +92,20 @@ export interface ThreatSummary {
   topAttackerIPs?: { ip: string; count: number }[];
 }
 
+export interface ThreatOverview {
+  summary: {
+    total: number;
+    high: number;
+    medium: number;
+    low: number;
+  };
+  severity_distribution: { severity: string; count: number }[];
+  top_threat_types: { attack_type: string; count: number }[];
+  top_attacker_ips: { ip: string; threat_count: number; top_threat_level: string }[];
+}
+
 // ─── Admin ────────────────────────────────────────────────────────────────────
-export type Decision = 'block' | 'whitelist' | 'monitor' | 'dismiss';
+export type Decision = 'block' | 'ignore' | 'monitor' | 'alert';
 
 export interface ThreatAnalysis {
   summary?: string;
@@ -103,12 +129,24 @@ export interface PendingAlert {
 }
 
 export interface AdminDecision {
-  id: string;
-  decision: Decision;
-  ip: string;
-  note?: string;
-  createdAt: string;
+  id: number;
+  userId?: number | null;
   logId?: number;
+  pendingId?: number;
+  action: string;
+  reason?: string | null;
+  duration?: number;
+  threatLevel?: string;
+  analysisData?: {
+    summary?: string;
+    confidence?: number;
+    indicators?: string[];
+    attack_type?: string;
+    threat_level?: string;
+    recommendations?: string[];
+  };
+  applied?: boolean;
+  decidedAt: string;
 }
 
 // ─── Agent ────────────────────────────────────────────────────────────────────
