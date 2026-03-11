@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../contexts/AuthContext";
 import { RoleBadge } from "./ui";
+import { APP_VERSION } from "../utils/app_version";
 
 interface NavItem {
   to: string;
@@ -65,12 +66,15 @@ function Sidebar({
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (settingsRef.current && !settingsRef.current.contains(e.target as Node)) {
+      if (
+        settingsRef.current &&
+        !settingsRef.current.contains(e.target as Node)
+      ) {
         setSettingsOpen(false);
       }
     };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleLogout = () => {
@@ -155,25 +159,35 @@ function Sidebar({
 
           {!collapsed && (
             <div className="flex-1 min-w-0">
-              <p className="text-sm text-white font-medium truncate">{user?.name}</p>
-              <div className="mt-0.5"><RoleBadge role={user!.role} /></div>
+              <p className="text-sm text-white font-medium truncate">
+                {user?.name}
+              </p>
+              <div className="mt-0.5">
+                <RoleBadge role={user!.role} />
+              </div>
             </div>
           )}
 
           {/* Settings gear with dropdown */}
           <div ref={settingsRef} className="relative shrink-0">
             <div
-              onClick={() => setSettingsOpen(o => !o)}
+              onClick={() => setSettingsOpen((o) => !o)}
               title="Settings"
               className="p-1.5 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer transition"
             >
-              <Settings size={15} className={settingsOpen ? 'text-white' : ''} />
+              <Settings
+                size={15}
+                className={settingsOpen ? "text-white" : ""}
+              />
             </div>
 
             {settingsOpen && (
               <div className="absolute bottom-9 left-0 w-44 bg-slate-800 border border-slate-700 rounded-xl shadow-2xl py-1 z-50">
                 <div
-                  onClick={() => { setSettingsOpen(false); navigate('/profile'); }}
+                  onClick={() => {
+                    setSettingsOpen(false);
+                    navigate("/profile");
+                  }}
                   className="flex items-center gap-2.5 px-3 py-2.5 text-sm text-slate-300 hover:text-white hover:bg-slate-700 cursor-pointer transition rounded-lg mx-1"
                 >
                   <UserCircle size={15} />
@@ -190,7 +204,13 @@ function Sidebar({
               </div>
             )}
           </div>
+         
         </div>
+         {!collapsed && (
+            <div className="text-[10px] text-slate-500 text-center pb-2">
+              v{APP_VERSION}
+            </div>
+          )}
       </div>
     </aside>
   );
